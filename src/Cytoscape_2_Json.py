@@ -125,6 +125,92 @@ def caseCvt(filePath, outPutDir):
             f2.write(json.dumps(cy))
         f.write(json.dumps(ar))
 
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+def graphCvt(filePath, outPutDir, graphType='linked',graphName='snort_forti'):
+    with open(filePath, 'rb') as handle:
+        subgraph_collection = pickle.load(handle)
+    fileName = graphType+filePath.split(graphType)[-1]
+
+    rstFolder = os.path.join(outPutDir, graphType)
+    if not os.path.exists(rstFolder):
+        os.mkdir(rstFolder)
+
+    fileName = os.path.join(outPutDir, graphType, fileName)
+
+    with open(fileName+'_filtered_new_columns.json', 'w') as f:
+        ar = []
+        nodes = []
+        edges = []
+        lst =subgraph_collection.get(graphName)
+        print(lst)
+        with open(fileName+'_'+graphName+'.json', 'w') as f2:
+            for idx, g in enumerate(lst):
+                parentid = "G" + str(idx)
+                graphattr = g.graph
+                graphattr["id"] = parentid
+                graphattr["score"] = g.score if hasattr(g, 'score') else 0
+                graphattr["consequences"] = g.consequences if hasattr(g, 'consequences') else []
+                graphattr["num_components"] = g.num_components if hasattr(g, 'num_components') else []       
+                graphattr["max_in_degree"] = g.max_in_degree if hasattr(g, 'max_in_degree') else []
+                graphattr["max_out_degree"] = g.max_out_degree if hasattr(g, 'max_out_degree') else []
+                graphattr["num_events"] = g.num_events if hasattr(g, 'num_events') else []
+                nodes.append({"data": graphattr})
+                cydata = nx.readwrite.json_graph.cytoscape_data(g)
+                # print(cydata)
+                ar.append(cydata)
+                for n in cydata["elements"]["nodes"]:
+                    findRcd = False
+                    for nodep in nodes:
+                        if n["data"]["id"] == nodep["data"]["id"]:
+                            #print('>>'+ str(nodep["data"]["subgraphs"]))
+                            if hasattr(nodep["data"], 'subgraphs'):       
+                                nodep["data"]["subgraphs"].append(parentid)
+                            else:
+                                n["data"]["subgraphs"] = [parentid]
+                            findRcd = True
+                    
+                    if not findRcd:
+                        n["data"]["subgraphs"] = [parentid]
+                        if(n['data']['id'].count('.')==3):
+                            # Check whehter node Id is a IP: 
+                            if(n['data']['id'] == '127.0.0.1' or '192.168.' in n['data']['id']):
+                                # local IP addrss: 
+                                n['data']['type'] = 'localIP'
+                                n['data']['geo'] = ['local', '(na,na)']
+                            else:
+                                n['data']['type'] = 'pubIP'
+                            # find the geo info if it is a public IP
+                            #ipbytes = .encode('utf-8')
+                            geoMatch = geolite2.lookup(n['data']['id'])
+                            if geoMatch: 
+                                n['data']['geo'] = [str(geoMatch.country), str(geoMatch.location)]
+                            else:
+                                n['data']['geo'] = ['unknown', '(na,na)']
+                    else:
+                        # The node is a APP/program
+                        n['data']['type'] = 'other'
+                        n['data']['geo'] = ['unknown', '(na,na)']
+                    nodes.append(n)
+                edgeCount = 0 
+                for e in cydata["elements"]["edges"]:
+                    e["data"]["idx"] = edgeCount
+                    e["data"]['t_port_values'] = [str(e['data']['t_port_values'])]
+                    e["data"]['s_port_values'] = list(e['data']['s_port_values'])
+                    e["data"]['start_timestamp'] = str(e['data']['start_timestamp'])
+                    edgeCount += 1
+                    edges.append(e)
+            ar.append(cydata)
+            cy = {
+                "elements": {
+                    #"subgraphs": subgraphs,
+                    "nodes": nodes,
+                    "edges": edges
+                }
+            }
+            #print(cy)
+            f2.write(json.dumps(cy))
+        f.write(json.dumps(ar))
 
 def main():
     if not os.path.exists(RST_FOLDER):
@@ -132,6 +218,13 @@ def main():
     # Generate the case result.
     for filePath in caseFileList:
         caseCvt(filePath, RST_FOLDER)
+
+    for filePath in linkFileList:
+        graphCvt(filePath, RST_FOLDER, graphType='linked', graphName='snort_forti')
+
+    for filePath in subFileList:
+        graphCvt(filePath, RST_FOLDER, graphType='subgraphs', graphName='fortinet')
+
 
 #-----------------------------------------------------------------------------
 if __name__ == '__main__':
