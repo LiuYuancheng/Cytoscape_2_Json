@@ -2,9 +2,10 @@
 #-----------------------------------------------------------------------------
 # Name:        Cytoscape_2_Json.py [python3]
 #
-# Purpose:     This module will provide function to convert the cytoscape graph 
+# Purpose:     This module will provide functions to convert the cytoscape graph 
 #              pickle file to JSON format file and find the geo location of the 
 #              public IP address.
+#              cytoscape link: https://cytoscape.org/
 #              
 # Author:      Liu Yuancheng
 #
@@ -36,11 +37,12 @@ RST_FOLDER = os.path.join(dirpath, "result")
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 def caseCvt(filePath, outPutDir):
-    """ Convert the case_* file to the json file.
+    """ Convert the 'case_*' file to the json file. Each case file should only have
+        one cytoscape graph build in.
         Args:
             filePath (Str): Case* source data file path.
             outPutDir (Str): Output directory path. The result Json file will be 
-				saved as outPutDir/filename.json
+				saved as 'outPutDir/case/filename.json'
     """
     subgraph_collection = None
     with open(filePath, 'rb') as handle:
@@ -67,6 +69,7 @@ def caseCvt(filePath, outPutDir):
             nodes.append({"data": graphattr})
             cydata = nx.readwrite.json_graph.cytoscape_data(subgraph_collection)
             ar.append(cydata)
+            # build the nodes info
             for n in cydata["elements"]["nodes"]:
                 findRcd = False
                 for nodep in nodes:
@@ -90,6 +93,7 @@ def caseCvt(filePath, outPutDir):
                         n['data']['type'] = 'other'
                         n['data']['geo'] = ['unknown', '(na,na)']
                     nodes.append(n)
+            # build the edges info
             edgeCount = 0 
             for e in cydata["elements"]["edges"]:
                 e["data"]["idx"] = edgeCount
@@ -98,7 +102,7 @@ def caseCvt(filePath, outPutDir):
                 e["data"]['start_timestamp'] = str(e['data']['start_timestamp'])
                 edgeCount += 1
                 edges.append(e)
-                ar.append(cydata)
+            ar.append(cydata)
             cy = {
                 "elements": {
                     #"subgraphs": subgraphs,
@@ -113,15 +117,17 @@ def caseCvt(filePath, outPutDir):
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 def graphCvt(filePath, outPutDir, graphType='linked',graphName='snort_forti'):
-    """ Convert the linked_*, subgraphs_* file to the json file.
-    Args:
-        filePath (Str): Case* source data file path.
-        outPutDir (Str): Output directory path. The result Json file will be 
-			saved as outPutDir/filename.json
-        graphType (str, optional): Identify what kind of data we want to convert. 
-            Defaults to 'linked'.
-        graphName (str, optional): Identify the graph name we want to find in the
-            cytoscape file. Defaults to 'snort_forti'.
+    """ Convert the 'linked_*', 'subgraphs_*' file to the json file. The linked/
+        subgrapshs files can have multiple cytoscape graphs build in.
+        one cytoscape build in.
+        Args:
+            filePath (Str): Case* source data file path.
+            outPutDir (Str): Output directory path. The result Json file will be 
+                saved as outPutDir/filename.json
+            graphType (str, optional): Identify what kind of data we want to convert. 
+                Defaults to 'linked'.
+            graphName (str, optional): Identify the graph name we want to find in the
+                cytoscape file. Defaults to 'snort_forti'.
     """
     with open(filePath, 'rb') as handle:
         subgraph_collection = pickle.load(handle)

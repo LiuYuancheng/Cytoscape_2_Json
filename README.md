@@ -1,6 +1,6 @@
 # Cytoscape To JSON
 
-**Program Design Purpose**: We want to convert some cystoscape node-edge graph file (under pkl format) to JSON format file which can be used by other program.
+**Program Design Purpose**: We want to convert some cystoscape nodes-edges graph file (under *.pkl format) to JSON format files which can be used by other program.
 
 [TOC]
 
@@ -8,7 +8,15 @@
 
 #### Introduction
 
-This module will provide function to convert the cytoscape graph pickle files to JSON format file and find the geo location of the public IP address. The geolocation information will be append in the Nodes' related data.
+This module will provide functions to convert the cytoscape graph pickle files to JSON format file and find the geo-location of the public IP address. The geo-location information will be append in the nodes' related data. The program can process 2 kinds of cytoscape file:
+
+**'case*'** : Each case file should only have one cytoscape build in.
+
+**'linked_*', 'subgraphs_*'** : The linked or subgraphs files can have multiple cytoscape graphs build in. The graph need to have a graph name as "key".
+
+A simple cytoscape graph: 
+
+![](doc/img/cytoscapteGraph.png)
 
 Version: v_0.1
 
@@ -34,8 +42,6 @@ Version: v_0.1
    pip install python-geoip-python3
    ```
 
-   link: https://zetcode.com/pyqt/qwebengineview/
-
 4. 
 
 ###### Hardware Needed : None
@@ -57,7 +63,7 @@ version: v0.2
 
 ###### Program Execution 
 
-1. Copy all the cytoscape pkl files in the folder `src/data`
+1. Copy all the cytoscape `*pkl` files in the folder `src/data`
 
 2. Cd to the program folder and run program execution cmd: 
 
@@ -69,9 +75,18 @@ version: v0.2
 
    All the converted JSON file will be saved in the folder `src/<type>/result` the result file will be same as the data source file as shown below: 
    
-   Example: `src/data/case_1` => `src/result/case/case_1.json`
+   Example:
+   
+    `src/data/case_1` => `src/result/case/case_1.json`
+   
+   `src/data/linked_graphs_sep_2019` => `src/result/linked/linked_graphs_sep_2019.json`
+   
+   `src/data/subgraphs_sep_2019` => `src/result/subgraphs/subgraphs_sep_2019.json`
 
+###### Module API Usage
 
+- Convert Case File: `caseCvt(filePath, outPutDir)`
+- Convert Multi-graphs file: `graphCvt(filePath, outPutDir, graphType='linked',graphName='snort_forti')`
 
 ------
 
